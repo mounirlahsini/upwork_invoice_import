@@ -6,6 +6,7 @@ from odoo import models, fields, api
 class UpworkInvoice(models.Model):
     _name = 'upwork.invoice'
     _description = "Upwork Invoice"
+    _inherit = ['mail.thread', 'mail.activity.mixin']
 
     name = fields.Char(string='Ref ID', required=True)
     invoice_date = fields.Date(string='Date')
