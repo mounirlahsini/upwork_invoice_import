@@ -211,6 +211,6 @@
 
     <menuitem id="main_upwork_invoice_menu" name="Upwork Invoice" action="upwork_invoice_list_action"/>
     <menuitem id="configuration_menu" name="Configuration" parent="main_upwork_invoice_menu"/>
-    <menuitem id="upwork_invoice_stage_menu" name="Upwork Invoice Stages" parent="configuration_menu" action="upwork_invoice_stage_list_action"/>
+    <menuitem id="upwork_invoice_stage_menu" name="Stages" parent="configuration_menu" action="upwork_invoice_stage_list_action"/>
 
 </odoo>
