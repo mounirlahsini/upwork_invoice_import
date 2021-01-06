@@ -32,7 +32,7 @@ class UpworkInvoice(models.Model):
     def _get_default_stage_id(self):
         return self.env['upwork.invoice.stage'].search([], order='sequence', limit=1)
     
-    #@api.model
+    @api.model
     def _read_group_stage_ids(self, stages, domain, order):
         return stages.sudo().search([], order=order)
 
