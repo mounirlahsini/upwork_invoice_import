@@ -164,7 +164,7 @@
         <field name="name">upwork.invoice.stage.tree</field>
         <field name="model">upwork.invoice.stage</field>
         <field name="arch" type="xml">
-            <tree string="Upwork Invoice Stage Tree">
+            <tree string="Stage Tree">
                 <field name="name"/>
                 <field name="sequence"/>
                 <field name="fold"/>
@@ -178,7 +178,7 @@
         <field name="name">upwork.invoice.stage.form</field>
         <field name="model">upwork.invoice.stage</field>
         <field name="arch" type="xml">
-            <form string="Upwork Invoice Stage Form">
+            <form string="Stage Form">
                 <sheet>
                     <group>
                         <group>
@@ -197,7 +197,7 @@
     </record>
 
     <record model="ir.actions.act_window" id="upwork_invoice_stage_list_action">
-        <field name="name">Upwork Invoicee Stages</field>
+        <field name="name">Upwork Invoice Stages</field>
         <field name="type">ir.actions.act_window</field>
         <field name="res_model">upwork.invoice.stage</field>
         <field name="view_type">form</field>
@@ -209,7 +209,34 @@
         </field>
     </record>
 
+    <record model="ir.ui.view" id="upwork_invoice_import_form_view">
+        <field name="name">upwork.invoice.import.form</field>
+        <field name="model">upwork.invoice.import</field>
+        <field name="arch" type="xml">
+            <form string="Import Form">
+                <group col="4" string="Import Upwork Invoices">
+                    <field name="xml_files" widget="many2many_binary"/>
+                </group>
+                <footer>
+                    <button name="import_files" string="Import" type="object" class="oe_highlight"/>
+                    <button string="Cancel" special="cancel" name="cancel" class="oe_link"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record model="ir.actions.act_window" id="upwork_invoice_import_list_action">
+        <field name="name">Import Upwork Invoices</field>
+        <field name="res_model">upwork.invoice.import</field>
+        <field name="view_type">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="upwork_invoice_import_form_view"/>
+    </record>
+
+    
+
     <menuitem id="main_upwork_invoice_menu" name="Upwork Invoice" action="upwork_invoice_list_action"/>
+    <menuitem id="import_menu" name="Import"  parent="main_upwork_invoice_menu"  action="upwork_invoice_import_list_action"/>
     <menuitem id="configuration_menu" name="Configuration" parent="main_upwork_invoice_menu"/>
     <menuitem id="upwork_invoice_stage_menu" name="Stages" parent="configuration_menu" action="upwork_invoice_stage_list_action"/>
 

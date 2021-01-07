@@ -47,3 +47,24 @@ class UpworkInvoiceStage(models.Model):
     sequence = fields.Integer(default=1)
     in_progress = fields.Boolean(string='In Progress', default=True)
     fold = fields.Boolean(string='Folded in Kanban', help='This stage is folded in the kanban view when there are not records in that stage to display.')
+
+
+class UpworkInvoiceImport(models.Model):
+    _name = 'upwork.invoice.import'
+    _description = "Upwork Invoice Import"
+    
+    invoice_files = fields.Many2many(comodel_name='ir.attachment', relation='class_ir_attachments_rel_upwork_invoice', column1='class_id', column2='attachment_id', string='Attachments')
+
+    def convertDateTime(self, DateTimeString):
+        year = DateTimeString[0] + DateTimeString[1] + DateTimeString[2] + DateTimeString[3]
+        month = DateTimeString[4] + DateTimeString[5]
+        day = DateTimeString[6] + DateTimeString[7]
+        hour = DateTimeString[8] + DateTimeString[9]
+        minute = DateTimeString[10] + DateTimeString[11]
+        second = DateTimeString[12] + DateTimeString[13]
+        DateTimeConst = year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second
+        DateTimeResult = datetime.strptime(DateTimeConst, '%Y-%m-%d %H:%M:%S')
+        return DateTimeResult
+
+    def import_files(self):
+        return {'type': 'ir.actions.act_window_close'}
