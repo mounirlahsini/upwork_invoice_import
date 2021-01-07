@@ -215,7 +215,7 @@
         <field name="arch" type="xml">
             <form string="Import Form">
                 <group col="4" string="Import Upwork Invoices">
-                    <field name="xml_files" widget="many2many_binary"/>
+                    <field name="invoice_files" widget="many2many_binary"/>
                 </group>
                 <footer>
                     <button name="import_files" string="Import" type="object" class="oe_highlight"/>
