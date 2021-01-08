@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from odoo import models, fields, api
-import datetime
+from datetime import datetime
 import csv
 
 
@@ -12,7 +12,7 @@ class UpworkInvoice(models.Model):
 
     name = fields.Char(string='Ref ID', required=True)
     date = fields.Char(string='Date')
-    invoice_date = fields.Date(string='Date', compute='_compute_date', store=True)
+    invoice_date = fields.Date(string='Invoice date', compute='_compute_date', store=True)
     invoice_type = fields.Selection(string="Type", selection=[('processing_fee', 'Processing Fee'), ('payment', 'Payment'), ('hourly', 'Hourly')])
     description = fields.Char(string='Description')
     agency = fields.Many2one('res.partner', string='Agency')
