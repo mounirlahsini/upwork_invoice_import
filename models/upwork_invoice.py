@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from odoo import models, fields, api
+import datetime
 import csv
 
 
@@ -37,7 +38,7 @@ class UpworkInvoice(models.Model):
         day = Datelist[1].strip(',')
         year = Datelist[2]
         DateConst = month + " " + day + " " + year
-        DateResult = Date.strptime(DateConst, "%b %d %Y")
+        DateResult = datetime.strptime(DateConst, '%b %d %Y').date()
         return DateResult
 
     @api.depends('date')
@@ -77,7 +78,7 @@ class UpworkInvoiceImport(models.Model):
         day = Datelist[1].strip(',')
         year = Datelist[2]
         DateConst = month + " " + day + " " + year
-        DateResult = Date.strptime(DateConst, "%b %d %Y")
+        DateResult = datetime.strptime(DateConst, '%b %d %Y').date()
         return DateResult
     
     def import_file(self, invoice_file):
