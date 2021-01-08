@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from odoo import models, fields, api
+import csv
 
 
 class UpworkInvoice(models.Model):
@@ -9,8 +10,8 @@ class UpworkInvoice(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
     name = fields.Char(string='Ref ID', required=True)
-    #invoice_date = fields.Date(string='Date')
-    invoice_date = fields.Char(string='Date')
+    date = fields.Char(string='Date')
+    invoice_date = fields.Date(string='Date', compute='_compute_date', store=True)
     invoice_type = fields.Selection(string="Type", selection=[('processing_fee', 'Processing Fee'), ('payment', 'Payment'), ('hourly', 'Hourly')])
     description = fields.Char(string='Description')
     agency = fields.Many2one('res.partner', string='Agency')
@@ -29,6 +30,20 @@ class UpworkInvoice(models.Model):
     stage_id = fields.Many2one('upwork.invoice.stage', string='Stage', index=True, default=lambda s: s._get_default_stage_id(), group_expand='_read_group_stage_ids', track_visibility='onchange')
     in_progress = fields.Boolean(related='stage_id.in_progress')
     color = fields.Integer()
+
+    def convertDate(self, DateString):
+        Datelist = DateString.split()
+        month = Datelist[0]
+        day = Datelist[1].strip(',')
+        year = Datelist[2]
+        DateConst = month + " " + day + " " + year
+        DateResult = Date.strptime(DateConst, "%b %d %Y")
+        return DateResult
+
+    @api.depends('date')
+    def _compute_date(self):
+        for record in self:
+            record.invoice_date = self.convertDate(record.date)
 
     def _get_default_stage_id(self):
         return self.env['upwork.invoice.stage'].search([], order='sequence', limit=1)
@@ -56,16 +71,29 @@ class UpworkInvoiceImport(models.Model):
     
     invoice_files = fields.Many2many(comodel_name='ir.attachment', relation='class_ir_attachments_rel_upwork_invoice', column1='class_id', column2='attachment_id', string='Attachments')
 
-    def convertDateTime(self, DateTimeString):
-        year = DateTimeString[0] + DateTimeString[1] + DateTimeString[2] + DateTimeString[3]
-        month = DateTimeString[4] + DateTimeString[5]
-        day = DateTimeString[6] + DateTimeString[7]
-        hour = DateTimeString[8] + DateTimeString[9]
-        minute = DateTimeString[10] + DateTimeString[11]
-        second = DateTimeString[12] + DateTimeString[13]
-        DateTimeConst = year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second
-        DateTimeResult = datetime.strptime(DateTimeConst, '%Y-%m-%d %H:%M:%S')
-        return DateTimeResult
+    def convertDate(self, DateString):
+        Datelist = DateString.split()
+        month = Datelist[0]
+        day = Datelist[1].strip(',')
+        year = Datelist[2]
+        DateConst = month + " " + day + " " + year
+        DateResult = Date.strptime(DateConst, "%b %d %Y")
+        return DateResult
+    
+    def import_file(self, invoice_file):
+        fileobj = TemporaryFile('wb+') 
+        fileobj.write(base64.decodestring(invoice_file))
+        fileobj.seek(0)
+        str_csv_data = fileobj.read().decode('utf-8')
+        lis = csv.reader(StringIO(str_csv_data), delimiter=',')
+        rownum = 0
+        faulty_rows = []
+        header = ''
+        cust_invoice_numbers = {}
+        invocie_list = [] 
 
     def import_files(self):
+        for record in self.invoice_files:
+            self.import_file(record)
+        
         return {'type': 'ir.actions.act_window_close'}
