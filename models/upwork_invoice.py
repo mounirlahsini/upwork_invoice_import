@@ -71,27 +71,36 @@ class UpworkInvoiceImport(models.Model):
     _description = "Upwork Invoice Import"
     
     invoice_files = fields.Many2many(comodel_name='ir.attachment', relation='class_ir_attachments_rel_upwork_invoice', column1='class_id', column2='attachment_id', string='Attachments')
-
-    def convertDate(self, DateString):
-        Datelist = DateString.split()
-        month = Datelist[0]
-        day = Datelist[1].strip(',')
-        year = Datelist[2]
-        DateConst = month + " " + day + " " + year
-        DateResult = datetime.strptime(DateConst, '%b %d %Y').date()
-        return DateResult
     
     def import_file(self, invoice_file):
-        fileobj = TemporaryFile('wb+') 
-        fileobj.write(base64.decodestring(invoice_file))
-        fileobj.seek(0)
-        str_csv_data = fileobj.read().decode('utf-8')
-        lis = csv.reader(StringIO(str_csv_data), delimiter=',')
-        rownum = 0
-        faulty_rows = []
-        header = ''
-        cust_invoice_numbers = {}
-        invocie_list = [] 
+        filename = invoice_file.datas_fname
+        with open(filename, 'r') as data:
+            for line in csv.DictReader(data):
+                if self.env['res.partner'].search([('name', '=', line['Agency'])]):
+                    agency = self.env['res.partner'].search([('name', '=', line['Agency'])])
+                else :
+                    agency = self.env['res.partner'].create({'name': line['Agency']})
+                
+                if self.env['res.partner'].search([('name', '=', line['Freelancer'])]):
+                    freelancer = self.env['res.partner'].search([('name', '=', line['Freelancer'])])
+                else :
+                    freelancer = self.env['res.partner'].create({'name': line['Freelancer']})
+                
+                self.env['upwork.invoice'].create({
+                    'name': line['Ref ID'], 
+                    'date': line['Date'] if 'Date' in line.keys() else '', 
+                    'invoice_type': line['Type'] if 'Type' in line.keys() else '',
+                    'description': line['Description'] if 'Description' in line.keys() else '',
+                    'agency': agency,
+                    'freelancer': freelancer,
+                    'team': line['Team'] if 'Team' in line.keys() else '',
+                    'account_name': line['Account Name'] if 'Account Name' in line.keys() else '',
+                    'po': line['PO'] if 'PO' in line.keys() else '',
+                    'amount': float(line['Amount']) if 'Amount' in line.keys() else None,
+                    'amount_local_currency': float(line['Amount in local currency']) if 'Amount in local currency' in line.keys() else None,
+                    'balance': float(line['Balance']) if 'Balance' in line.keys() else None,
+                    'invoice_file': invoice_file,
+                    })
 
     def import_files(self):
         for record in self.invoice_files:

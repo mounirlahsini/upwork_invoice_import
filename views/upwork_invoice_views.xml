@@ -90,7 +90,7 @@
         <field name="name">upwork_invoice.kanban</field>
         <field name="model">upwork.invoice</field>
         <field name="arch" type="xml">
-            <kanban default_group_by="stage_id" class="o_kanban_mobile">
+            <kanban default_group_by="invoice_type" class="o_kanban_mobile">
                 <field name="stage_id"/>
                 <field name="name"/>
                 <field name="invoice_date"/>
@@ -151,9 +151,7 @@
         <field name="res_model">upwork.invoice</field>
         <field name="view_type">form</field>
         <field name="view_mode">kanban,tree,form</field>
-        <field name="context">{
-                "group_by": "stage_id"
-        }</field>
+        <field name="context">{}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Click on import to create some upwork invoices
             </p>
