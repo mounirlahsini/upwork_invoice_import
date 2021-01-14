@@ -2,6 +2,8 @@
 
 from odoo import models, fields, api
 from datetime import datetime
+from io import StringIO
+import base64
 import csv
 
 
@@ -13,8 +15,8 @@ class UpworkInvoice(models.Model):
     name = fields.Char(string='Ref ID', required=True)
     date = fields.Char(string='Date')
     invoice_date = fields.Date(string='Invoice date', compute='_compute_date', store=True)
-    invoice_type = fields.Selection(string="Type", selection=[('processing_fee', 'Processing Fee'), ('payment', 'Payment'), ('hourly', 'Hourly')])
-    description = fields.Char(string='Description')
+    invoice_type = fields.Selection(string="Type", selection=[('Processing Fee', 'Processing Fee'), ('Payment', 'Payment'), ('Hourly', 'Hourly')])
+    description = fields.Text(string='Description')
     agency = fields.Many2one('res.partner', string='Agency')
     freelancer = fields.Many2one('res.partner', string='Freelancer')
 
@@ -26,19 +28,21 @@ class UpworkInvoice(models.Model):
     amount_local_currency = fields.Monetary(string='Amount in local currency', currency_field='currency_id')
     currency_id = fields.Many2one('res.currency', string="Currency", default= lambda self : self.env.ref('base.main_company').currency_id, readonly=True)
     balance = fields.Monetary(string='Balance', currency_field='currency_id')
-    invoice_file = fields.Binary(string="Document")
+    invoice_file = fields.Binary(string="Source Document")
 
     stage_id = fields.Many2one('upwork.invoice.stage', string='Stage', index=True, default=lambda s: s._get_default_stage_id(), group_expand='_read_group_stage_ids', track_visibility='onchange')
     in_progress = fields.Boolean(related='stage_id.in_progress')
     color = fields.Integer()
 
     def convertDate(self, DateString):
-        Datelist = DateString.split()
-        month = Datelist[0]
-        day = Datelist[1].strip(',')
-        year = Datelist[2]
-        DateConst = month + " " + day + " " + year
-        DateResult = datetime.strptime(DateConst, '%b %d %Y').date()
+        if bool(DateString) != False :
+            Datelist = DateString.split()
+            month = Datelist[0]
+            day = Datelist[1].strip(',')
+            year = Datelist[2]
+            DateConst = month + " " + day + " " + year
+            DateResult = datetime.strptime(DateConst, '%b %d %Y').date()
+        else: DateResult = DateString
         return DateResult
 
     @api.depends('date')
@@ -73,37 +77,45 @@ class UpworkInvoiceImport(models.Model):
     invoice_files = fields.Many2many(comodel_name='ir.attachment', relation='class_ir_attachments_rel_upwork_invoice', column1='class_id', column2='attachment_id', string='Attachments')
     
     def import_file(self, invoice_file):
-        filename = invoice_file.datas_fname
-        with open(filename, 'r') as data:
-            for line in csv.DictReader(data):
+        csv_data = base64.b64decode(invoice_file.datas)
+        data_file = StringIO(csv_data.decode("utf-8"))
+        data_file.seek(0)
+        file_reader = []
+        csv_reader = csv.DictReader(data_file)
+        file_reader.extend(csv_reader)
+        agency = ""
+        freelancer = ""
+        for line in file_reader:
+            if line['Agency'] != "":
                 if self.env['res.partner'].search([('name', '=', line['Agency'])]):
                     agency = self.env['res.partner'].search([('name', '=', line['Agency'])])
                 else :
                     agency = self.env['res.partner'].create({'name': line['Agency']})
-                
+
+            if line['Freelancer'] != "":
                 if self.env['res.partner'].search([('name', '=', line['Freelancer'])]):
                     freelancer = self.env['res.partner'].search([('name', '=', line['Freelancer'])])
                 else :
                     freelancer = self.env['res.partner'].create({'name': line['Freelancer']})
-                
-                self.env['upwork.invoice'].create({
-                    'name': line['Ref ID'], 
-                    'date': line['Date'] if 'Date' in line.keys() else '', 
-                    'invoice_type': line['Type'] if 'Type' in line.keys() else '',
-                    'description': line['Description'] if 'Description' in line.keys() else '',
-                    'agency': agency,
-                    'freelancer': freelancer,
-                    'team': line['Team'] if 'Team' in line.keys() else '',
-                    'account_name': line['Account Name'] if 'Account Name' in line.keys() else '',
-                    'po': line['PO'] if 'PO' in line.keys() else '',
-                    'amount': float(line['Amount']) if 'Amount' in line.keys() else None,
-                    'amount_local_currency': float(line['Amount in local currency']) if 'Amount in local currency' in line.keys() else None,
-                    'balance': float(line['Balance']) if 'Balance' in line.keys() else None,
-                    'invoice_file': invoice_file,
-                    })
+            
+            self.env['upwork.invoice'].create({
+                'name': line['Ref ID'] if 'Ref ID' in line.keys() else 'Ref ID Missing', 
+                'date': line['Date'] if 'Date' in line.keys() else '', 
+                'invoice_type': line['Type'] if 'Type' in line.keys() else '',
+                'description': line['Description'] if 'Description' in line.keys() else '',
+                'agency': agency.id if bool(agency) == True else '',
+                'freelancer': freelancer.id if bool(freelancer) == True else '',
+                'team': line['Team'] if 'Team' in line.keys() else '',
+                'account_name': line['Account Name'] if 'Account Name' in line.keys() else '',
+                'po': line['PO'] if 'PO' in line.keys() else '',
+                'amount': float(line['Amount']) if bool(line['Amount']) and 'Amount' in line.keys() else None,
+                'amount_local_currency': float(line['Amount in local currency']) if bool(line['Amount in local currency']) and 'Amount in local currency' in line.keys() else None,
+                'balance': float(line['Balance']) if bool(line['Balance']) and 'Balance' in line.keys() else None,
+                'invoice_file': invoice_file,
+                })
 
     def import_files(self):
         for record in self.invoice_files:
             self.import_file(record)
         
-        return {'type': 'ir.actions.act_window_close'}
+        return {'type': 'ir.actions.client','tag': 'reload',}
