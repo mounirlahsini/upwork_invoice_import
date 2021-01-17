@@ -87,7 +87,7 @@
     </record>
 
     <record model="ir.ui.view" id="upwork_invoice_kanban_view">
-        <field name="name">upwork_invoice.kanban</field>
+        <field name="name">upwork.invoice.kanban</field>
         <field name="model">upwork.invoice</field>
         <field name="arch" type="xml">
             <kanban default_group_by="invoice_type" class="o_kanban_mobile">
@@ -146,11 +146,21 @@
         </field>
     </record>
 
+    <record model="ir.ui.view" id="upwork_invoice_calendar_view">
+        <field name="name">upwork.invoice.calendar</field>
+        <field name="model">upwork.invoice</field>
+        <field name="arch" type="xml">
+            <calendar string="Upwork Invoice Calendar" date_start="invoice_date" date_stop="invoice_date" color="color">
+                <field name="name"/>
+            </calendar>
+        </field>
+    </record>
+
     <record model="ir.actions.act_window" id="upwork_invoice_list_action">
         <field name="name">Upwork Invoice</field>
         <field name="res_model">upwork.invoice</field>
         <field name="view_type">form</field>
-        <field name="view_mode">kanban,tree,form</field>
+        <field name="view_mode">kanban,tree,calendar,form</field>
         <field name="context">{}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Click on import to create some upwork invoices
@@ -230,8 +240,6 @@
         <field name="target">new</field>
         <field name="view_id" ref="upwork_invoice_import_form_view"/>
     </record>
-
-    
 
     <menuitem id="main_upwork_invoice_menu" name="Upwork Invoice" action="upwork_invoice_list_action"/>
     <menuitem id="import_menu" name="Multi File Import"  parent="main_upwork_invoice_menu"  action="upwork_invoice_import_list_action" sequence="1"/>

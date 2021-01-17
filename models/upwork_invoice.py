@@ -57,6 +57,26 @@ class UpworkInvoice(models.Model):
     def _read_group_stage_ids(self, stages, domain, order):
         return stages.sudo().search([], order=order)
 
+    @api.model
+    def create(self, values):
+        res = super(UpworkInvoice, self).create(values)
+        partner = None
+        if bool(res.freelancer):
+            partner = res.freelancer.id
+        elif bool(res.agency):
+            partner = res.agency.id
+        else: partner = None
+        self.env['account.invoice'].create({
+            'name': res.name if res.name else 'Ref ID Missing', 
+            'partner_id': partner,
+            'date_invoice': res.invoice_date if bool(res.invoice_date) else None,
+        })
+        return res
+
+    def write(self, values):
+        res = super(EquipmentRequest, self).write(values)
+        return res
+
 
 class UpworkInvoiceStage(models.Model):
     _name = 'upwork.invoice.stage'
@@ -119,3 +139,4 @@ class UpworkInvoiceImport(models.Model):
             self.import_file(record)
         
         return {'type': 'ir.actions.client','tag': 'reload',}
+
