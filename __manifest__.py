@@ -19,6 +19,7 @@
     'depends': [
         'base',
         'contacts',
+        'account'
     ],
 
     'data': [

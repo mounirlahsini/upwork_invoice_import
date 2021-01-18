@@ -65,16 +65,30 @@ class UpworkInvoice(models.Model):
             partner = res.freelancer.id
         elif bool(res.agency):
             partner = res.agency.id
-        else: partner = None
+        
         self.env['account.invoice'].create({
-            'name': res.name if res.name else 'Ref ID Missing', 
+            'name': res.name if bool(res.name) else 'Ref ID Missing',
             'partner_id': partner,
             'date_invoice': res.invoice_date if bool(res.invoice_date) else None,
+            'upwork_invoice_id': res.id
         })
         return res
 
     def write(self, values):
-        res = super(EquipmentRequest, self).write(values)
+        res = super(UpworkInvoice, self).write(values)
+        partner = None
+        if bool(values.get('freelancer')):
+            partner = values.get('freelancer.id')
+        elif bool(values.get('agency')):
+            partner = values.get('agency.id')
+        
+        account_invoice = self.env['account.invoice'].search([('upwork_invoice_id', '=', values.get('id'))])
+        account_invoice.write({
+            'name': values.get('name') if bool(values.get('name')) else 'Ref ID Missing', 
+            'partner_id': partner,
+            'date_invoice': values.get('invoice_date') if bool(values.get('invoice_date')) else None,
+            'upwork_invoice_id': values.get('id')
+        })
         return res
 
 
@@ -139,4 +153,5 @@ class UpworkInvoiceImport(models.Model):
             self.import_file(record)
         
         return {'type': 'ir.actions.client','tag': 'reload',}
+
 
