@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from odoo import models, fields, api
+from odoo import api, fields, models, _
+from odoo.exceptions import UserError, ValidationError
 from datetime import datetime
 from io import StringIO
 import base64
@@ -63,32 +64,50 @@ class UpworkInvoice(models.Model):
         partner = None
         if bool(res.freelancer):
             partner = res.freelancer.id
-        elif bool(res.agency):
+        if bool(res.agency):
             partner = res.agency.id
-        
-        self.env['account.invoice'].create({
-            'name': res.name if bool(res.name) else 'Ref ID Missing',
-            'partner_id': partner,
-            'date_invoice': res.invoice_date if bool(res.invoice_date) else None,
-            'upwork_invoice_id': res.id
-        })
+
+        if res.invoice_type != "Payment":
+            product =  self.env['product.product'].create({
+                'name': 'Generic freelance service',
+                'type': 'service'
+            })
+            account = self.env['account.account'].search([('code', '=', '310100')])
+            invoice = self.env['account.invoice'].create({
+                'name': res.name if bool(res.name) else 'Ref ID Missing',
+                'partner_id': partner,
+                'date_invoice': res.invoice_date if bool(res.invoice_date) else None,
+                'user_id': None,
+                'upwork_invoice': res.id
+            })
+            invoice_line = self.env['account.invoice.line'].create({
+                'name': res.description,
+                'product_id': product.id,
+                'price_unit': abs(res.amount),
+                'quantity': 1.0,
+                'account_id': account.id,
+                'invoice_id': invoice.id
+            })
         return res
 
     def write(self, values):
         res = super(UpworkInvoice, self).write(values)
-        partner = None
-        if bool(values.get('freelancer')):
-            partner = values.get('freelancer.id')
-        elif bool(values.get('agency')):
-            partner = values.get('agency.id')
+        account_invoice = self.env['account.invoice'].search([('upwork_invoice.id', '=', self.id)])
+        account_invoice_line = self.env['account.invoice.line'].search([('invoice_id', '=', account_invoice.id)])
         
-        account_invoice = self.env['account.invoice'].search([('upwork_invoice_id', '=', values.get('id'))])
-        account_invoice.write({
-            'name': values.get('name') if bool(values.get('name')) else 'Ref ID Missing', 
-            'partner_id': partner,
-            'date_invoice': values.get('invoice_date') if bool(values.get('invoice_date')) else None,
-            'upwork_invoice_id': values.get('id')
-        })
+        if bool(values.get('name')):
+            account_invoice.write({'name': values.get('name')})
+        if bool(values.get('freelancer')):
+            account_invoice.write({'partner_id': values.get('freelancer')})
+        if bool(values.get('agency')):
+            account_invoice.write({'partner_id': values.get('agency')})
+        if bool(values.get('invoice_date')):
+            account_invoice.write({'date_invoice': values.get('invoice_date')})
+        if bool(values.get('description')):
+            account_invoice_line.write({'name': values.get('description')})
+        if bool(values.get('amount')):
+            account_invoice_line.write({'price_unit': abs(values.get('amount'))})
+
         return res
 
 
@@ -152,6 +171,4 @@ class UpworkInvoiceImport(models.Model):
         for record in self.invoice_files:
             self.import_file(record)
         
-        return {'type': 'ir.actions.client','tag': 'reload',}
-
-
+        return {'type': 'ir.actions.client','tag': 'reload'}

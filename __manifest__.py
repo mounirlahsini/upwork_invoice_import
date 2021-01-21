@@ -11,7 +11,7 @@
     """,
 
     'author': "Mounir lahsini",
-    'website': "https://github.com/matteopolleschi/upwork_invoice_import",
+    'website': "https://github.com/mounirlahsini/upwork_invoice_import",
 
     'category': 'Accounting',
     'version': '1.0',
